@@ -18,13 +18,13 @@
     font-size: 11px; 
   }
   
-  /* --- CABEÇALHO COM LOGOS --- */
+  /* --- CABEÇALHO --- */
   .header { 
     position: fixed; 
     top: 0; 
     left: 0; 
     width: 100%; 
-    height: 110px; /* Aumentei um pouco para caber melhor as logos */
+    height: 110px;
     background: #001f3f; 
     z-index: 1000; 
     padding: 0 15px; 
@@ -35,13 +35,12 @@
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
   }
 
-  /* Estilo específico para as logos no cabeçalho */
   .logo-img {
-    height: 80px; /* Altura fixa para manter o padrão */
-    width: auto;  /* Largura automática para não distorcer */
+    height: 80px; 
+    width: auto;
     max-width: 80px;
     object-fit: contain;
-    filter: drop-shadow(0px 0px 2px rgba(255,255,255,0.2)); /* Leve brilho para destacar do fundo */
+    filter: drop-shadow(0px 0px 2px rgba(255,255,255,0.2));
   }
 
   .titulo { 
@@ -148,13 +147,11 @@
 </div>
 
 <div class="header">
-  <img src="caveira.png" class="logo-img" alt="RUMB">
-  
+  <a href="../dashboard.html"><img src="caveira.png" class="logo-img" alt="RUMB" title="Voltar ao Painel"></a>
   <div class="titulo">
     <h1>Polícia Militar do Estado do Rio de Janeiro</h1>
     <p>LIVRO DE CAUTELA DE ESPARGIDORES (GÁS)</p>
   </div>
-  
   <img src="pmerj.png" class="logo-img" alt="PMERJ">
 </div>
 
@@ -181,6 +178,7 @@
     <div class="bloco-titulo">2. DADOS DO ESPARGIDOR (GÁS)</div>
     <div class="grid-campos">
       <div class="campo-grupo"><label>Nº SÉRIE / PATRIMÔNIO</label><input type="text" id="patrimonio" required placeholder="Nº da lata"></div>
+      
       <div class="campo-grupo"><label>TIPO / MODELO</label>
         <select id="modelo" required>
             <option value="GEL">GEL (ALVO DIRECIONADO)</option>
@@ -190,6 +188,9 @@
             <option value="PSI">PSI (JATO)</option>
         </select>
       </div>
+
+      <div class="campo-grupo"><label>PESO (g)</label><input type="number" id="peso" required placeholder="Ex: 120" step="any"></div>
+      
       <div class="campo-grupo"><label>VALIDADE</label><input type="month" id="validade"></div>
     </div>
 
@@ -237,7 +238,7 @@
       <tr>
         <th style="background:#001f3f; width: 50px;">FOTO</th>
         <th colspan="3">POLICIAL</th>
-        <th colspan="3">MATERIAL</th>
+        <th colspan="4">MATERIAL</th>
         <th colspan="3" style="background:#FF851B; color: black;">SAÍDA</th>
         <th colspan="3" style="background:#15803d;">DEVOLUÇÃO</th>
         <th style="width: 80px;">AÇÃO</th>
@@ -245,7 +246,7 @@
       <tr>
         <th>IMG</th>
         <th>GH</th><th>RG</th><th>NOME</th>
-        <th>PATRIMÔNIO</th><th>TIPO</th><th>VALIDADE</th>
+        <th>PATR.</th><th>TIPO</th><th>PESO (g)</th><th>VAL.</th>
         <th>DATA</th><th>HORA</th><th>RUMB</th>
         <th>DATA</th><th>HORA</th><th>RUMB</th>
         <th>BAIXA</th>
@@ -256,7 +257,7 @@
 </div>
 
 <script>
-// --- BANCO DE DADOS (Dados fictícios para teste) ---
+// --- BANCO DE DADOS ---
 const databaseEfetivo = [
   { gh: "SUB PM", rg: "68831", nome: "GOMES" },
   { gh: "CB PM", rg: "101823", nome: "S. LEMOS" },
@@ -415,7 +416,7 @@ async function iniciarCamera() {
 
 function tirarFoto() {
     if (!streamCamera) return;
-    const width = 320; // Reduz tamanho para economizar espaço
+    const width = 320; 
     const height = video.videoHeight / (video.videoWidth/width);
     canvas.width = width;
     canvas.height = height;
@@ -463,6 +464,7 @@ form.onsubmit = e => {
     nome: document.getElementById('nome').value.toUpperCase(),
     patrimonio: document.getElementById('patrimonio').value.toUpperCase(),
     modelo: document.getElementById('modelo').value,
+    peso: document.getElementById('peso').value, // SALVA O PESO
     validade: document.getElementById('validade').value,
     foto: document.getElementById('fotoBase64').value,
     dataAt: document.getElementById('dataAt').value, 
@@ -520,10 +522,11 @@ function render(filtroAbertas = false) {
     const tr = document.createElement("tr");
     if(d.status === "Entregue") { tr.style.opacity = "0.6"; tr.style.background = "#e0ffe0"; }
     
+    // LINHA DA TABELA ATUALIZADA COM O PESO
     tr.innerHTML = `
       <td>${imgTag}</td>
       <td>${d.gh}</td> <td>${d.rg}</td> <td style="text-align:left; font-weight:bold">${d.nome}</td>
-      <td>${d.patrimonio}</td> <td>${d.modelo}</td> <td>${d.validade}</td>
+      <td>${d.patrimonio}</td> <td>${d.modelo}</td> <td>${d.peso || "-"}</td> <td>${d.validade}</td>
       <td>${dataCFormatada}</td> <td>${d.horaC}</td> <td style="color:#0074D9; font-weight:bold">${d.rumb}</td>
       <td>${d.dataE || "-"}</td> <td>${d.horaE || "-"}</td> <td style="color:#15803d; font-weight:bold">${d.rumbEntrega || "-"}</td>
       <td>${d.status === "Cautelado" ? `<button class="btn-baixa" onclick="entregar(${indexReal})">BAIXAR</button>` : "OK"}</td>`;
