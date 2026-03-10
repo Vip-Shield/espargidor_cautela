@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cautela de Espargidores - RUMB</title>
+    <link rel="shortcut icon" type="imagex/png" href="../IMAGENS/caveira.ico">
+
 <style>
   /* --- ESTILO GERAL --- */
   * { box-sizing: border-box; }
@@ -108,10 +110,14 @@
   .btn-backup { background: #059669; } .btn-restore { background: #dc2626; }
   .btn-filter { background: #b8860b; color: black; }
 
-  /* --- TABELA --- */
+  /* --- TABELA E BUSCA --- */
   .search-container { margin-top: 20px; margin-bottom: 10px; max-width: 1000px; margin-left: auto; margin-right: auto; }
-  #inputBusca { width: 100%; padding: 10px; background: #001226; border: 1px solid #FF851B; color: white; }
+  #inputBusca { width: 100%; padding: 10px; background: #001226; border: 1px solid #FF851B; color: white; border-radius: 5px; font-weight: bold; box-sizing: border-box;}
+  #inputBusca::placeholder { color: #ccc; }
   
+  /* CONTADOR DE ABERTAS */
+  .contador-box { background: #b8860b; color: #000; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 12px; box-shadow: 0 0 8px rgba(184, 134, 11, 0.5); display: inline-block; margin-bottom: 10px; }
+
   .table-wrapper { overflow-x: auto; max-width: 1000px; margin: 0 auto; }
   table { width: 100%; border-collapse: collapse; margin-top: 5px; background: white; color: black; }
   th, td { border: 1px solid #ccc; padding: 6px; text-align: center; vertical-align: middle; font-size: 10px; }
@@ -139,20 +145,20 @@
 <body>
 
 <div class="header-print">
-    <img src="caveira.jpg" alt="RUMB">
+    <img src="caveira.jpg" alt="RUMB" onerror="this.style.display='none'">
     <div>
         <h3>PMERJ - LIVRO DE CAUTELA DE ESPARGIDORES (RUMB)</h3>
     </div>
-    <img src="pmerj.png" alt="PMERJ">
+    <img src="pmerj.png" alt="PMERJ" onerror="this.style.display='none'">
 </div>
 
 <div class="header">
-  <a href="../dashboard.html"><img src="caveira.png" class="logo-img" alt="RUMB" title="Voltar ao Painel"></a>
+  <a href="../dashboard.html"><img src="caveira.png" class="logo-img" alt="RUMB" title="Voltar ao Painel" onerror="this.style.display='none'"></a>
   <div class="titulo">
     <h1>Polícia Militar do Estado do Rio de Janeiro</h1>
     <p>LIVRO DE CAUTELA DE ESPARGIDORES (GÁS)</p>
   </div>
-  <img src="pmerj.png" class="logo-img" alt="PMERJ">
+  <img src="pmerj.png" class="logo-img" alt="PMERJ" onerror="this.style.display='none'">
 </div>
 
 <div class="form-container">
@@ -222,14 +228,15 @@
       <button type="button" class="btn-filter" onclick="mostrarAbertas()">🔴 SÓ ABERTAS</button>
       <button type="button" class="btn-filter" onclick="render()">📘 TODAS</button>
       <button type="button" class="btn-print" onclick="window.print()">🖨️ IMPRIMIR</button>
-      <button type="button" class="btn-backup" onclick="exportarBackup()">⬇️ BACKUP</button>
+      <button type="button" class="btn-backup" onclick="exportarBackup()">⬇️ SALVAR</button>
       <input type="file" id="fileBackup" style="display:none" onchange="importarBackup(this)">
-      <button type="button" class="btn-restore" onclick="document.getElementById('fileBackup').click()">⬆️ RESTAURAR</button>
+      <button type="button" class="btn-restore" onclick="document.getElementById('fileBackup').click()">⬆️ IMPORTAR</button>
     </div>
   </form>
 </div>
 
 <div class="search-container">
+  <div class="contador-box" id="contadorAbertas">🚨 CAUTELAS EM ABERTO: 0</div>
   <input type="text" id="inputBusca" placeholder="🔍 BUSCAR (RG, Nome, Patrimônio...)" onkeyup="filtrarTabela()">
 </div>
 
@@ -439,16 +446,56 @@ function limparFoto() {
     document.getElementById('btnLimpar').style.display = 'none';
 }
 
-// --- ESCALA RUMB ---
-const escalaRUMB = [
-  { nome: "LACERDA", inicio: "2026-01-28T05:00", fim: "2026-01-28T17:00" },
-  { nome: "R. SIMÕES", inicio: "2026-01-28T17:00", fim: "2026-01-29T05:00" }
+// --- ESCALA RUMB (10 Turnos de 12 horas) ---
+const dbRumb = {
+    triumpho: { posto: "SD PM", nome: "TRIUMPHO" },
+    simoes: { posto: "3º SGT PM", nome: "R. SIMÕES" },
+    dan: { posto: "3º SGT PM", nome: "DAN" },
+    lacerda: { posto: "3º SGT PM", nome: "LACERDA" },
+    alacrino: { posto: "3º SGT PM", nome: "ALACRINO" }
+};
+
+const sequenciaEscala = [
+    dbRumb.dan,      // 0: 26/01 05h
+    dbRumb.triumpho, // 1: 26/01 17h
+    dbRumb.simoes,   // 2: 27/01 05h
+    dbRumb.dan,      // 3: 27/01 17h
+    dbRumb.lacerda,  // 4: 28/01 05h
+    dbRumb.simoes,   // 5: 28/01 17h
+    dbRumb.alacrino, // 6: 29/01 05h
+    dbRumb.lacerda,  // 7: 29/01 17h
+    dbRumb.triumpho, // 8: 30/01 05h
+    dbRumb.alacrino  // 9: 30/01 17h
 ];
 
-function obterRUMBAtual() {
-  const agora = new Date();
-  const turno = escalaRUMB.find(e => agora >= new Date(e.inicio) && agora <= new Date(e.fim));
-  return turno ? turno.nome : "FORA DA ESCALA";
+// Data Âncora: Turno 0 iniciou em 26 de Janeiro de 2026 às 05:00
+const dataAncora = new Date(2026, 0, 26, 5, 0, 0);
+
+// --- LÓGICA DE ATUALIZAÇÃO AUTOMÁTICA DO RUMB ---
+function atualizarRumbAutomatico() {
+    const inputData = document.getElementById('dataC').value;
+    const inputHora = document.getElementById('horaC').value;
+
+    if (!inputData || !inputHora) return;
+
+    const partesData = inputData.split('-');
+    const partesHora = inputHora.split(':');
+    
+    const dataSelecionada = new Date(
+        partesData[0], 
+        partesData[1] - 1, 
+        partesData[2], 
+        partesHora[0], 
+        partesHora[1], 
+        0
+    );
+
+    const diffMs = dataSelecionada.getTime() - dataAncora.getTime();
+    const diffHoras = Math.floor(diffMs / (1000 * 60 * 60));
+    const offsetTurnos = Math.floor(diffHoras / 12);
+    const indiceTurno = ((offsetTurnos % 10) + 10) % 10;
+
+    document.getElementById('rumb').value = sequenciaEscala[indiceTurno].nome;
 }
 
 // --- SISTEMA ---
@@ -465,7 +512,7 @@ form.onsubmit = e => {
     nome: document.getElementById('nome').value.toUpperCase(),
     patrimonio: document.getElementById('patrimonio').value.toUpperCase(),
     modelo: document.getElementById('modelo').value,
-    peso: document.getElementById('peso').value, // SALVA O PESO
+    peso: document.getElementById('peso').value, 
     validade: document.getElementById('validade').value,
     foto: document.getElementById('fotoBase64').value,
     dataAt: document.getElementById('dataAt').value, 
@@ -481,6 +528,13 @@ form.onsubmit = e => {
   try {
       dados.push(novo);
       salvar(); render(); form.reset(); limparFoto();
+      
+      // Reseta Data, Hora e RUMB para "Agora" após salvar
+      document.getElementById('dataAt').valueAsDate = new Date();
+      document.getElementById('dataC').valueAsDate = new Date();
+      document.getElementById('horaC').value = new Date().toLocaleTimeString('pt-BR').slice(0,5);
+      atualizarRumbAutomatico();
+
       document.getElementById('rg').focus();
   } catch (err) {
       alert("Memória cheia! Exporte um backup e limpe os dados.");
@@ -488,11 +542,34 @@ form.onsubmit = e => {
 };
 
 function entregar(index) {
-  const sugestao = obterRUMBAtual();
-  const nomeRumb = prompt("Quem recebe o material?", sugestao);
-  if (nomeRumb === null) return;
+  const dataCInput = prompt("Informe a data da baixa (DD/MM/AAAA) ou deixe em branco para assumir a data atual:");
+  
+  let agora = new Date();
+  
+  if (dataCInput) {
+      const regexDataC = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+      if(regexDataC.test(dataCInput)){
+         const partes = dataCInput.split('/');
+         agora = new Date(partes[2], partes[1] - 1, partes[0], agora.getHours(), agora.getMinutes(), agora.getSeconds());
+      } else {
+          alert('Formato de data inválido. Assumindo a data atual.');
+      }
+  }
 
-  const agora = new Date();
+  // Lógica para achar quem está de serviço no momento do recebimento (ou da data informada)
+  const diffMs = agora.getTime() - dataAncora.getTime();
+  const diffHoras = Math.floor(diffMs / (1000 * 60 * 60));
+  const offsetTurnos = Math.floor(diffHoras / 12);
+  const indiceTurno = ((offsetTurnos % 10) + 10) % 10; 
+  const sugestao = sequenciaEscala[indiceTurno].nome;
+
+  const nomeRumb = prompt(`Baixando em ${agora.toLocaleDateString('pt-BR')} às ${agora.toLocaleTimeString('pt-BR').slice(0,5)}.\n\nInforme o RUMB que está recebendo o material:`, sugestao);
+
+  if (nomeRumb === null || nomeRumb.trim() === "") {
+      alert("Baixa cancelada: É necessário informar quem recebeu o material.");
+      return;
+  }
+
   dados[index].dataE = agora.toLocaleDateString('pt-BR');
   dados[index].horaE = agora.toLocaleTimeString('pt-BR').slice(0,5);
   dados[index].rumbEntrega = nomeRumb.toUpperCase();
@@ -513,17 +590,21 @@ function filtrarTabela() {
 
 function render(filtroAbertas = false) {
   tabela.innerHTML = "";
+  
+  // Atualiza o contador de Abertas
+  const abertasCount = dados.filter(d => d.status === "Cautelado").length;
+  document.getElementById("contadorAbertas").innerText = `🚨 CAUTELAS EM ABERTO: ${abertasCount}`;
+  
   const listaExibicao = filtroAbertas ? dados.filter(d => d.status === "Cautelado") : dados;
   
   listaExibicao.slice().reverse().forEach((d) => {
     const indexReal = dados.indexOf(d);
-    const dataCFormatada = d.dataC.split('-').reverse().join('/');
+    const dataCFormatada = (d.dataC && d.dataC.includes('-')) ? d.dataC.split('-').reverse().join('/') : (d.dataC || "-");
     const imgTag = d.foto ? `<img src="${d.foto}" class="img-tabela" onclick="var win=window.open();win.document.write('<img src=${d.foto} style=width:100%>')">` : '<span style="color:#aaa">S/ FOTO</span>';
 
     const tr = document.createElement("tr");
     if(d.status === "Entregue") { tr.style.opacity = "0.6"; tr.style.background = "#e0ffe0"; }
     
-    // LINHA DA TABELA ATUALIZADA COM O PESO
     tr.innerHTML = `
       <td>${imgTag}</td>
       <td>${d.gh}</td> <td>${d.rg}</td> <td style="text-align:left; font-weight:bold">${d.nome}</td>
@@ -552,16 +633,28 @@ function importarBackup(input) {
   const reader = new FileReader();
   reader.onload = e => {
     if(confirm("Substituir dados atuais pelo backup?")) {
-        try { dados = JSON.parse(e.target.result); salvar(); render(); alert("Importado!"); }
+        try { 
+            dados = JSON.parse(e.target.result); 
+            salvar(); 
+            render(); 
+            alert("Importado!"); 
+        }
         catch(err) { alert("Arquivo inválido."); }
+        finally { input.value = ""; }
     }
   };
   reader.readAsText(file);
 }
 
+// INICIALIZA CAMPOS DE DATA, HORA E RUMB AUTOMÁTICO
 document.getElementById('dataAt').valueAsDate = new Date();
 document.getElementById('dataC').valueAsDate = new Date();
-document.getElementById('horaC').value = new Date().toTimeString().slice(0,5);
+document.getElementById('horaC').value = new Date().toLocaleTimeString('pt-BR').slice(0,5);
+atualizarRumbAutomatico();
+
+// Monitora mudanças para atualizar em tempo real
+document.getElementById('dataC').addEventListener('change', atualizarRumbAutomatico);
+document.getElementById('horaC').addEventListener('change', atualizarRumbAutomatico);
 
 render();
 </script>
